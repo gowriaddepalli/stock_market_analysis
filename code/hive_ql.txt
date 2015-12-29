@@ -1,0 +1,34 @@
+1.create external table stock_eod
+(stockticker string,
+ transactiondate string,
+ openprice float,
+ highprice float,
+ lowprice float,
+ closeprice float,
+ volume bigint)ROW FORMAT DELIMITED FIELDS TERMINATED BY ","
+ LOCATION'/user/cloudera/nyse_analysis/stock_eod';
+
+
+2.create table stock_volume_per_month_13 row format delimited fields terminated by '|' as 
+select cl.sector,cl.company_name, substr(s.transactiondate,4) transactionmonth,
+sum(s.volume) monthlyvolume from companylist cl
+join stock_eod s
+on s.stockticker = cl.symbol
+where s.transactiondate like '%2013'
+group by cl.sector, cl.company_name ,substr(s.transactiondate,4)
+order by cl.sector, cl.company_name, transactionmonth;
+
+3.create table covariance row format delimited fields terminated by "," as
+select a.STOCK_SYMBOL, b.STOCK_SYMBOL, month(a.STOCK_DATE),
+(AVG(a.STOCK_PRICE_HIGH*b.STOCK_PRICE_HIGH) – (AVG(a.STOCK_PRICE_HIGH)*AVG(b.STOCK_PRICE_HIGH)))from NYSE a join NYSE b 
+on a.STOCK_DATE=b.STOCK_DATE where a.STOCK_SYMBOL<b.STOCK_SYMBOL and year(a.STOCK_DATE)=2008
+Group by a.STOCK_SYMBOL, b. STOCK_SYMBOL, month(a.STOCK_DATE);
+
+4.create table cova as
+select a.stock_symbol a_stock_symbol, b.stock_symbol b_stock_symbol,year(a.stock_date) var_year, month(a.stock_date) var_month,(AVG(a.stock_price_high*b.stock_price_high) - (AVG(a.STOCK_PRICE_HIGH)*AVG(b.STOCK_PRICE_HIGH))) cov 
+from nyse a join nyse b
+on a.stock_date=b.stock_date
+where a.stock_symbol<b.stock_symbol and right(a.stock_date,4)=2009
+Group by a.stock_symbol, b.stock_symbol, month(a.stock_date),year(a.stock_date);
+
+5.select * from nyse_analysis.companylist limit 10;
